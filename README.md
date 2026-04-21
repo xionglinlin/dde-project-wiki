@@ -295,7 +295,7 @@ pms_url: https://pms.deepin.com/bug/PMS-12345
 ## 致谢
 
 - 基于 [Andrej Karpathy 的 LLM Wiki 模式](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)
-- 原始实现来自 [karpathy-wiki](https://github.com/toolboxdotmd/karpathy-wiki)
+- 原始实现来自 [karpathy-wiki](https://github.com/toolboxmd/karpathy-wiki)
 
 ## 许可证
 
