@@ -477,6 +477,185 @@ pms_url: https://pms.deepin.com/bug/PMS-12345
 
 ---
 
+## MIGRATE（导入历史文档）工作流
+
+当用户要导入之前保存在其他位置的分析文档时执行。
+
+### 1. 触发场景
+
+用户说：
+- "导入这些分析"
+- "把这些文档加入 wiki"
+- "导入历史记录"
+- "把之前的分析导入"
+- 直接指定目录/文件路径（如 "把 ~/notes/ 下的文档导入"）
+
+### 2. 读取文档
+
+```bash
+# 用户指定目录时
+find /path/to/docs -name "*.md" -type f
+
+# 用户指定单个文件时
+cat /path/to/file.md
+```
+
+读取所有 .md 文件内容，记录文件名和路径。
+
+### 3. 智能分类（按内容特征）
+
+分析文档内容，根据关键词判断类型：
+
+| 目标目录 | 关键词 |
+|---------|--------|
+| `bug-analysis/` | bug、问题、修复、PMS、崩溃、异常、错误、卡死、闪退 |
+| `concepts/` | 架构、流程、模块、组件、机制、设计、模式、原理 |
+| `entities/` | 类、接口、API、服务、控制器、Manager、Handler |
+| `queries/` | 分析、总结、对比、研究、调研 |
+
+**分类示例**：
+
+```
+login-bug-fix.md
+  内容包含："问题"、"修复"、"PMS-12345"
+  → 分类为 bug-analysis/
+
+dde-shell-架构分析.md
+  内容包含："架构"、"模块"、"组件"
+  → 分类为 concepts/
+
+SessionService 分析.md
+  内容包含："服务"、"DBus 接口"、"API"
+  → 分类为 entities/go/
+
+登录流程对比分析.md
+  内容包含："对比"、"分析"
+  → 分类为 queries/
+```
+
+**无法判断时**：询问用户指定类型。
+
+### 4. 转换格式
+
+#### 4.1 添加 YAML frontmatter
+
+```yaml
+---
+title: 从文件名或内容提取
+type: bug-analysis | concept | entity | query
+tags: [从内容提取关键词]
+created: 原文档日期或导入日期
+updated: 导入日期
+related_files:
+  - 从内容中识别的源文件路径
+imported_from: /path/to/original/file.md
+---
+```
+
+#### 4.2 提取 related_files
+
+从内容中识别源文件路径模式：
+- `src/**/*.cpp`、`src/**/*.h`
+- `qml/**/*.qml`
+- `pkg/**/*.go`
+- `include/**/*.h`
+
+#### 4.3 提取 PMS 信息
+
+```python
+# 识别 PMS 编号
+PMS-\d+
+# 识别 PMS 链接
+https?://pms[\w./-]*
+```
+
+### 5. 创建 wiki 页面
+
+```markdown
+# 写入对应目录
+wiki/bug-analysis/login-freeze.md
+wiki/concepts/auth-architecture.md
+wiki/entities/go/session-service.md
+wiki/queries/login-flow-analysis.md
+```
+
+保留原文档内容，仅在开头添加 frontmatter。
+
+### 6. 更新交叉引用
+
+1. 检查导入内容涉及的已有 entity/concept
+2. 在相关页面添加 wikilinks
+3. 更新 `index.md` 添加新页面条目
+
+### 7. log.md 记录
+
+```markdown
+## [2026-04-21] migrate | 导入历史分析文档
+- 来源：/home/user/notes/
+- 导入文档数：5
+- 分类结果：
+  - bug-analysis: 3 篇
+  - concepts: 1 篇
+  - queries: 1 篇
+- 新增交叉引用：4 处
+```
+
+### 8. 注意事项
+
+- **原文档不受影响**：只读取，不修改/删除
+- **独立维护**：导入后 wiki 页面与原文档独立
+- **命名冲突**：如有同名页面，询问用户如何处理（覆盖/重命名/跳过）
+- **重复导入**：检查 `imported_from` 字段避免重复
+
+### 9. 使用示例
+
+**示例 1：导入整个目录**
+
+```
+用户：把 ~/Documents/dde-notes/ 下的分析文档导入到 wiki
+
+AI 执行：
+1. 扫描目录，找到 12 个 .md 文件
+2. 分析每个文件的内容特征
+3. 分类：
+   - bug-analysis: 5 篇
+   - concepts: 3 篇
+   - entities: 2 篇
+   - queries: 2 篇
+4. 转换格式并写入 wiki/
+5. 更新交叉引用
+6. 记录到 log.md
+
+AI 输出：
+已导入 12 篇文档到 wiki：
+- bug-analysis: 5 篇（登录问题、启动崩溃等）
+- concepts: 3 篇（架构设计、信号槽机制等）
+- entities: 2 篇（SessionService、LauncherModel）
+- queries: 2 篇（性能对比分析）
+```
+
+**示例 2：导入单个文件**
+
+```
+用户：把这个文件导入 wiki：~/bug-report.md
+
+AI 执行：
+1. 读取文件内容
+2. 内容包含 "bug"、"PMS-456"、"修复方案"
+3. 分类为 bug-analysis/
+4. 提取 PMS 编号：PMS-456
+5. 提取相关文件：src/dialog.cpp, src/handler.cpp
+6. 创建 wiki/bug-analysis/dialog-bug.md
+7. 更新交叉引用
+
+AI 输出：
+已导入为 bug-analysis/dialog-bug.md
+- 关联 PMS: PMS-456
+- 关联源文件: src/dialog.cpp, src/handler.cpp
+```
+
+---
+
 ## Mermaid 图规范
 
 ### 架构图
