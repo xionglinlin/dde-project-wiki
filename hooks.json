@@ -1,0 +1,24 @@
+{
+  "Stop": [
+    {
+      "matcher": ".*",
+      "hooks": [
+        {
+          "type": "prompt",
+          "prompt": "如果项目中存在 wiki/ 目录，检查本次任务中是否有源代码文件被创建、修改或删除（.cpp, .h, .hpp, .c, .cc, .cxx, .qml, .js, .go, .proto, .sh, .py, CMakeLists.txt, *.cmake, *.pro）。如果有，静默更新相关 wiki 页面以反映变更，更新 index.md，追加到 log.md。重点关注结构性变更（新模块、重命名、API 变化、架构调整），忽略琐碎编辑。如果完成了 bug 分析或功能分析，考虑将结果归档到 bug-analysis/。如果没有显著变更或 wiki/ 不存在，则不执行任何操作。"
+        }
+      ]
+    }
+  ],
+  "SessionStart": [
+    {
+      "matcher": "*",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/check-project-drift.sh"
+        }
+      ]
+    }
+  ]
+}
